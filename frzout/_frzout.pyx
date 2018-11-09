@@ -1465,8 +1465,9 @@ def sample(Surface surface not None, HRG hrg not None):
         if surface.shear and not hrg.shear_prepared:
             hrg.prepare_shear()
 
-        if surface.bulk and not hrg.bulk_prepared:
-            hrg.prepare_bulk()
+        # Disable bulk for now
+        #if surface.bulk and not hrg.bulk_prepared:
+        #    hrg.prepare_bulk()
 
     cdef RNG rng
 

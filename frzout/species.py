@@ -35,6 +35,7 @@ def _mass_range(name, mass, width, degen, boson):
 
     if boson:  # meson
         m_min = {
+            'gamma': 0.0,
             'f(0)(500)': 2*PION,
             'rho(770)': 2*PION,
             'omega(782)': 2*PION,
@@ -137,8 +138,8 @@ def _read_particle_data():
         # extract particle IDs (possibly multiple on a line)
         IDs = [int(i) for i in l[:32].split()]
 
-        # skip elementary particles
-        if IDs[0] < 100:
+        ## skip elementary particles
+        if (IDs[0] < 100)and(IDs[0] not in [2, 22]):
             continue
 
         # digits 1-3 of the ID denote the quark content
@@ -151,6 +152,11 @@ def _read_particle_data():
         # the last digit (ones place) of the ID is the degeneracy
         degen = _nth_digit(IDs[0], 0)
 
+        if (IDs[0] == 2):
+            degen=2
+        elif (IDs[0] == 22):
+            degen=2
+
         # skip K0S (ID = 310) and K0L (130)
         if degen == 0:
             continue
@@ -161,18 +167,35 @@ def _read_particle_data():
             width = float(l[70:87])
         except ValueError:
             width = 0.
-        name, charges = l[107:].split()
-        name = name.strip().decode()
-        charges = [charge_codes[i] for i in charges.split(b',')]
+
+        if (IDs[0] in [2, 22]):
+            charges=[0]
+            name="doesntmatter"
+        else:
+            name, charges = l[107:].split()
+            name = name.strip().decode()
+            charges = [charge_codes[i] for i in charges.split(b',')]
 
         assert len(IDs) == len(charges)
+
+
+        def is_boson(degen, ID):
+            if (ID  == 2):
+                boson=False
+            elif (ID == 22):
+                boson=True
+            else:
+                boson=bool(degen % 2)
+
+            return boson
 
         base_data = dict(
             name=name,
             mass=mass,
             width=width,
             degen=degen,
-            boson=bool(degen % 2),
+            #boson=bool(degen % 2),
+            boson=is_boson(degen,IDs[0])
         )
 
         # determine mass thresholds for resonances
@@ -216,6 +239,8 @@ urqmd = [
     337, 9000221
 ]
 
+conformal_species = [ 22 ]
+
 
 def _normalize_species(species='all'):
     """
@@ -235,6 +260,8 @@ def _normalize_species(species='all'):
             return ((i, species_dict[i]) for i in identified)
         elif species == 'urqmd':
             return ((i, species_dict[i]) for i in urqmd)
+        elif species == 'conformal_species':
+            return ((i, species_dict[i]) for i in conformal_species)
         else:
             def items_gen():
                 for ID in species:
